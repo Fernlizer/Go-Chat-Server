@@ -1,0 +1,122 @@
+<html>
+<head>
+    <title>Chat Room</title>
+    <style>
+        #messages {
+            height: 300px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat Room</h1>
+    <p>Enter the room name and password to join:</p>
+    <form id="join-form">
+        <input type="text" id="room-name" placeholder="Room name" required>
+        <input type="password" id="room-password" placeholder="Password" required>
+        <input type="submit" value="Join">
+    </form>
+    <p>Or enter "admin" as the room name and check the box to join as admin:</p>
+    <form id="admin-form">
+        <input type="checkbox" id="admin-check"> I am the admin
+        <input type="submit" value="Join">
+    </form>
+    <div id="chat-area" hidden>
+        <p>You are in the room: <span id="room-display"></span></p>
+        <div id="messages"></div>
+        <form id="send-form">
+            <input type="text" id="message-input" placeholder="Type a message" required>
+            <input type="submit" value="Send">
+        </form>
+    </div>
+    <script>
+        // get the elements from the document
+        const joinForm = document.getElementById("join-form");
+        const adminForm = document.getElementById("admin-form");
+        const chatArea = document.getElementById("chat-area");
+        const roomDisplay = document.getElementById("room-display");
+        const messages = document.getElementById("messages");
+        const sendForm = document.getElementById("send-form");
+        const messageInput = document.getElementById("message-input");
+
+        // declare a global variable for the websocket
+        let ws;
+
+        // handle the join form submission
+        joinForm.addEventListener("submit", function(event) {
+            // prevent the default behavior of the form
+            event.preventDefault();
+            // get the room name and password from the inputs
+            const roomName = document.getElementById("room-name").value;
+            const roomPassword = document.getElementById("room-password").value;
+            // create a websocket connection to the server with the room name and password as query parameters
+            ws = new WebSocket("ws://localhost:3000/ws/" + roomName + "?password=" + roomPassword);
+            // set the websocket event handlers
+            setWsHandlers(roomName);
+        });
+
+        // handle the admin form submission
+        adminForm.addEventListener("submit", function(event) {
+            // prevent the default behavior of the form
+            event.preventDefault();
+            // check if the admin checkbox is checked
+            const isAdmin = document.getElementById("admin-check").checked;
+            if (isAdmin) {
+                // create a websocket connection to the server with the room name as "admin" and a query parameter to indicate admin status
+                ws = new WebSocket("ws://localhost:3000/ws/admin?admin=true");
+                // set the websocket event handlers
+                setWsHandlers("admin");
+            }
+        });
+
+        // set the websocket event handlers
+        function setWsHandlers(roomName) {
+            // when the connection is opened
+            ws.onopen = function() {
+                // hide the join and admin forms
+                joinForm.hidden = true;
+                adminForm.hidden = true;
+                // show the chat area and display the room name
+                chatArea.hidden = false;
+                roomDisplay.textContent = roomName;
+            };
+            // when a message is received from the server
+            ws.onmessage = function(event) {
+                // create a new paragraph element with the message text
+                const p = document.createElement("p");
+                p.textContent = event.data;
+                // append the paragraph to the messages div
+                messages.appendChild(p);
+                // scroll to the bottom of the messages div
+                messages.scrollTop = messages.scrollHeight;
+            };
+            // when the connection is closed
+            ws.onclose = function() {
+                // show an alert message
+                alert("Connection closed");
+                // reload the page
+                location.reload();
+            };
+            // when an error occurs
+            ws.onerror = function() {
+                // show an alert message
+                alert("Connection error");
+                // reload the page
+                location.reload();
+            };
+        }
+
+        // handle the send form submission
+        sendForm.addEventListener("submit", function(event) {
+            // prevent the default behavior of the form
+            event.preventDefault();
+            // get the message text from the input
+            const message = messageInput.value;
+            // send the message to the server
+            ws.send(message);
+            // clear the input
+            messageInput.value = "";
+        });
+    </script>
+</body>
+</html>

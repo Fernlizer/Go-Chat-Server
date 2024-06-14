@@ -1,0 +1,4 @@
+allowed_domains:
+  - http://localhost:3441
+  - https://myapp.com
+  - 127.0.0.1
